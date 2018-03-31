@@ -65,8 +65,8 @@ import se.citerus.dddsample.infrastructure.persistence.inmemory.VoyageRepository
 public class CargoLifecycleScenarioTest {
 
   /**
-   * Repository implementations are part of the infrastructure layer,
-   * which in this test is stubbed out by in-memory replacements.
+   * 仓库实现是基础架构层的一部分,
+   * 在本测试中会被内存中替代物所替代
    */
   HandlingEventRepository handlingEventRepository;
   CargoRepository cargoRepository;
@@ -74,64 +74,59 @@ public class CargoLifecycleScenarioTest {
   VoyageRepository voyageRepository;
 
   /**
-   * This interface is part of the application layer,
-   * and defines a number of events that occur during
-   * aplication execution. It is used for message-driving
-   * and is implemented using JMS.
+   * 这个接口是应用程序层的一部分，
+   * 定义了一些应用程序执行期间发生的事件。
+   * 它用于消息驱动并通过JMS去实施。
    *
-   * In this test it is stubbed with synchronous calls.
+   * 在本测试中，它通过同步调用去替代
+   *
    */
   ApplicationEvents applicationEvents;
 
   /**
-   * These three components all belong to the application layer,
-   * and map against use cases of the application. The "real"
-   * implementations are used in this lifecycle test,
-   * but wired with stubbed infrastructure.
+   * 这三个组件都属于应用程序层，并与该应用程序的用例相对应。
+   * “真实”的实现被用于整个生命周期的测试，但通过基础设施桩去操控
+   *
    */
   BookingService bookingService;
   HandlingEventService handlingEventService;
   CargoInspectionService cargoInspectionService;
 
   /**
-   * This factory is part of the handling aggregate and belongs to
-   * the domain layer. Similar to the application layer components,
-   * the "real" implementation is used here too,
-   * wired with stubbed infrastructure.
+   * 该工厂是处理聚合的一部分，属于领域层。
+   * 与应用层的组件相类似，这里也使用了“真实”实现，通过基础设施桩去操控。
+   *
    */
   HandlingEventFactory handlingEventFactory;
 
   /**
-   * This is a domain service interface, whose implementation
-   * is part of the infrastructure layer (remote call to external system).
-   *
-   * It is stubbed in this test.
+   * 这是一个域服务接口，它的实现是基础设施层的一部分(远程调用外部系统)。
+   * 它在本测试通过桩代替。
    */
   RoutingService routingService;
 
   @Test
   public void testCargoFromHongkongToStockholm() throws Exception {
-    /* Test setup: A cargo should be shipped from Hongkong to Stockholm,
-       and it should arrive in no more than two weeks. */
+    /* 测试设置：货物应从香港运往斯德哥尔摩，
+       它应该在不超过两周时间内到达。 */
     Location origin = HONGKONG;
     Location destination = STOCKHOLM;
     Date arrivalDeadline = toDate("2009-03-18");
 
-    /* Use case 1: booking
+    /* 用例1：预订
 
-       A new cargo is booked, and the unique tracking id is assigned to the cargo. */
+       货被预订，并且这唯一的跟踪编号被分配给货物。 */
     TrackingId trackingId = bookingService.bookNewCargo(
       origin.unLocode(), destination.unLocode(), arrivalDeadline
     );
 
-    /* The tracking id can be used to lookup the cargo in the repository.
+    /* 跟踪ID可用于查找仓库中的货物。
+       重要: 货物和域模型负责确定
+        货物的状态，是否在正确的轨道上等等。
+        这是核心领域的逻辑。
 
-       Important: The cargo, and thus the domain model, is responsible for determining
-       the status of the cargo, whether it is on the right track or not and so on.
-       This is core domain logic.
-
-       Tracking the cargo basically amounts to presenting information extracted from
-       the cargo aggregate in a suitable way. */
+       跟踪货物基本上等同于呈现从货物提取的信息
+        以合适的方式聚合。 */
     Cargo cargo = cargoRepository.find(trackingId);
     assertThat(cargo).isNotNull();
     assertThat(cargo.delivery().transportStatus()).isEqualTo(NOT_RECEIVED);
